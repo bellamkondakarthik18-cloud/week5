@@ -1,0 +1,26 @@
+class ToggleExample extends StatefulWidget {
+  const ToggleExample({super.key});
+
+  @override
+  State<ToggleExample> createState() => _ToggleExampleState();
+}
+
+class _ToggleExampleState extends State<ToggleExample> {
+  bool isOn = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Switch(
+          value: isOn,
+          onChanged: (value) {
+            setState(() {
+              isOn = value;
+            });
+          },
+        ),
+      ),
+    );
+  }
+}
