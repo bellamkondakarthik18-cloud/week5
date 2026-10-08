@@ -1,0 +1,33 @@
+class MyPage extends StatefulWidget {
+  const MyPage({super.key});
+
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  late TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: TextField(
+        controller: controller,
+      ),
+    );
+  }
+}
