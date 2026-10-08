@@ -1,0 +1,313 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Stateless vs Stateful',
+      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      home: const HomePage(),
+    );
+  }
+}
+
+/// Menu that links to each demo.
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final demos = <String, Widget>{
+      '1. StatelessWidget': const StatelessDemo(),
+      '2. StatefulWidget (Counter)': const CounterDemo(),
+      '3. Lifecycle (initState / dispose)': const LifecycleDemo(),
+      '4. Lifting State Up': const LiftingStateDemo(),
+      '5. State Management (ChangeNotifier)': const ChangeNotifierDemo(),
+    };
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Flutter State Demos')),
+      body: ListView(
+        children: demos.entries
+            .map((e) => ListTile(
+                  title: Text(e.key),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => e.value),
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 1. StatelessWidget – immutable, build() depends only on its constructor args
+// ---------------------------------------------------------------------------
+class Greeting extends StatelessWidget {
+  final String name;
+  const Greeting({super.key, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('Hello, $name', style: const TextStyle(fontSize: 24));
+  }
+}
+
+class StatelessDemo extends StatelessWidget {
+  const StatelessDemo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('StatelessWidget')),
+      body: const Center(child: Greeting(name: 'Flutter')),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 2. StatefulWidget – two classes: the widget + its State object
+// ---------------------------------------------------------------------------
+class CounterDemo extends StatefulWidget {
+  const CounterDemo({super.key});
+
+  @override
+  State<CounterDemo> createState() => _CounterDemoState();
+}
+
+class _CounterDemoState extends State<CounterDemo> {
+  int _count = 0;
+
+  void _increment() {
+    // setState marks the widget dirty -> build() runs again
+    setState(() => _count++);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('StatefulWidget')),
+      body: Center(
+        child: Text('Count: $_count', style: const TextStyle(fontSize: 32)),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _increment,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3. Lifecycle: initState -> build -> setState -> dispose
+//    Open the debug console to watch the log messages.
+// ---------------------------------------------------------------------------
+class LifecycleDemo extends StatefulWidget {
+  const LifecycleDemo({super.key});
+
+  @override
+  State<LifecycleDemo> createState() => _LifecycleDemoState();
+}
+
+class _LifecycleDemoState extends State<LifecycleDemo> {
+  bool _showTimer = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Lifecycle')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_showTimer) const TimerBox(),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => setState(() => _showTimer = !_showTimer),
+              child: Text(_showTimer ? 'Remove timer (calls dispose)' : 'Add timer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TimerBox extends StatefulWidget {
+  const TimerBox({super.key});
+
+  @override
+  State<TimerBox> createState() => _TimerBoxState();
+}
+
+class _TimerBoxState extends State<TimerBox> {
+  late final Timer _timer;
+  int _seconds = 0;
+
+  @override
+  void initState() {
+    super.initState(); // called ONCE when the State is created
+    debugPrint('initState');
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _seconds++); // triggers a rebuild every second
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant TimerBox oldWidget) {
+    super.didUpdateWidget(oldWidget); // parent rebuilt with new config
+    debugPrint('didUpdateWidget');
+  }
+
+  @override
+  void dispose() {
+    debugPrint('dispose'); // clean up controllers, timers, streams
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('build');
+    return Text('Elapsed: $_seconds s', style: const TextStyle(fontSize: 28));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4. Lifting state up – parent owns the state; children are stateless
+// ---------------------------------------------------------------------------
+class LiftingStateDemo extends StatefulWidget {
+  const LiftingStateDemo({super.key});
+
+  @override
+  State<LiftingStateDemo> createState() => _LiftingStateDemoState();
+}
+
+class _LiftingStateDemoState extends State<LiftingStateDemo> {
+  int _likes = 0; // single source of truth
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Lifting State Up')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            LikeDisplay(likes: _likes),
+            const SizedBox(height: 16),
+            LikeButton(onPressed: () => setState(() => _likes++)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LikeDisplay extends StatelessWidget {
+  final int likes;
+  const LikeDisplay({super.key, required this.likes});
+
+  @override
+  Widget build(BuildContext context) =>
+      Text('Likes: $likes', style: const TextStyle(fontSize: 28));
+}
+
+class LikeButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  const LikeButton({super.key, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) => ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.thumb_up),
+        label: const Text('Like'),
+      );
+}
+
+// ---------------------------------------------------------------------------
+// 5. State management with ChangeNotifier + ListenableBuilder (built in,
+//    no packages). Same idea as Provider, minus the dependency.
+// ---------------------------------------------------------------------------
+class CartModel extends ChangeNotifier {
+  final List<String> _items = [];
+
+  List<String> get items => List.unmodifiable(_items);
+
+  void add(String item) {
+    _items.add(item);
+    notifyListeners(); // tells listeners to rebuild
+  }
+
+  void clear() {
+    _items.clear();
+    notifyListeners();
+  }
+}
+
+class ChangeNotifierDemo extends StatefulWidget {
+  const ChangeNotifierDemo({super.key});
+
+  @override
+  State<ChangeNotifierDemo> createState() => _ChangeNotifierDemoState();
+}
+
+class _ChangeNotifierDemoState extends State<ChangeNotifierDemo> {
+  final CartModel _cart = CartModel();
+
+  @override
+  void dispose() {
+    _cart.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('ChangeNotifier'),
+        actions: [
+          // Only this badge rebuilds when the cart changes
+          ListenableBuilder(
+            listenable: _cart,
+            builder: (_, __) => Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(child: Text('Items: ${_cart.items.length}')),
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Wrap(
+            spacing: 8,
+            children: ['Apple', 'Banana', 'Mango']
+                .map((f) => ActionChip(label: Text('Add $f'), onPressed: () => _cart.add(f)))
+                .toList(),
+          ),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: _cart,
+              builder: (_, __) => ListView(
+                children: _cart.items.map((i) => ListTile(title: Text(i))).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _cart.clear,
+        label: const Text('Clear'),
+        icon: const Icon(Icons.delete),
+      ),
+    );
+  }
+}
