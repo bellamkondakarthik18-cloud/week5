@@ -1,0 +1,26 @@
+class MyPage extends StatefulWidget {
+  const MyPage({super.key});
+
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  String message = '';
+
+  @override
+  void initState() {
+    super.initState();
+
+    message = 'Welcome to Flutter!';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text(message),
+      ),
+    );
+  }
+}
